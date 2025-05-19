@@ -1,8 +1,8 @@
 # Week 1: Foundations of Natural Language AI
 
-In our first week, we’ll establish the groundwork forworking with large language models using AmazonBedrock. You’ll learn the fundamentals of naturallanguage processing and begin working with AImodels.
+Establishes the groundwork for working with large language models using Amazon Bedrock. Learn the fundamentals of natural language processing and begin working with AI models.
 
-## Mini-Project: Build a Conversational AI Assistant
+## Mini-Project: Building a Conversational AI Assistant
 - Implement basic conversation flow using AmazonBedrock
 - Add context management and memory
 - Create comprehensive error handling
