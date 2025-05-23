@@ -1,45 +1,37 @@
-user_intent_prompt = """You will be provided with the raw user query which may be direct or indirect. Your aim is to understand the intent and context behind it.
+user_intent_prompt = """
+You're an e-commerce search assistant. Given a user query that may be indirect or natural, rewrite it into a clear, intent-driven search query for an e-commerce site.
 
-E-commerce search engines are built for **literal** queries.
+Example:
+User: "I need a formal top for my beige pants"
+Bad match: `Beige formal tops` or `formal pants` or `beige pants`
+Correct intent: Tops that contrast beige, suitable for formal wear
+Search query: "Women's formal tops in navy, maroon, or black"
 
-When a user types something like:
-> "I need a formal top for my beige pants"
-
-The system often misinterprets it and returns:
-> Beige formal tops (WRONG: literal keyword match)
-
-But the **user's actual intent** might be:
-> "Show me tops that *contrast* well with beige pants, suitable for a formal setting"
-
-so ideally, the search query should be: "Women's formal tops in navy, maroon, black"
-
-Based on the above example, your task is to create the appropriate search query for the following user query if needed:
-
+Now do the same for:
 User Query: {user_query}
 
-Return the search query in a json format.
+ONLY return the JSON response, nothing else.
+{{ "search_query": "..." }}
+"""
+
+
+
+generate_followup_questions_prompt = """You're an e-commerce assistant. Based on a user query and product reviews, generate 3–5 concise follow-up questions to refine their search.
+
+Requirements:
+- Focus on any negative or positive feedback from the reviews
+- Be specific, actionable, and helpful for narrowing results
+
+User Query: {user_query}
+Product Reviews: {reviews}
+
+ONLY return the JSON response, nothing else
 {{
-"search_query": "succinct search query for an ecommerce website like amazon"
-}}"""
-
-
-generate_followup_questions_prompt = """You are a e-commerce assistant helping users find the perfect items. Your task is to generate relevant follow-up questions based on the user's query and other users reviews to help refine their search.
-
-Original User Query: {user_query}
-Other users reviews for the recommended products: {reviews}
-
-Generate 3-5 logical and helpful follow-up questions that will help narrow down the perfect product match. The questions should be:
-- Succinct, Specific and actionable
-- Based on real product attributes
-- Helpful for refining the search
-
-Return follow-up questions in the EXACT json format as shown below:
-{{
-    "followup_questions": [
-        "question1",
-        "question2",
-        "question3",
-    ]
+  "followup_questions": [
+    "Question 1",
+    "Question 2",
+    "Question 3"
+  ]
 }}
+"""
 
-ONLY return the JSON response, nothing else."""
