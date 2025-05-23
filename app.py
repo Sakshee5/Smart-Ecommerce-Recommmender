@@ -22,6 +22,8 @@ if 'input_key' not in st.session_state:
     st.session_state.input_key = 0
 if 'current_recommendations' not in st.session_state:
     st.session_state.current_recommendations = None
+if 'processed_query' not in st.session_state:
+    st.session_state.processed_query = None
 
 def add_message(role: str, content: str):
     """Add a message to the chat history."""
@@ -33,22 +35,19 @@ def add_message(role: str, content: str):
 
 def process_query(query: str, is_followup: bool = False) -> Tuple[Dict[str, str], List[Tuple]]:
     """Process the user query and return products."""
+
+    query_embedding = product_manager.get_embeddings([query])[0]
     
     if is_followup and st.session_state.current_recommendations is not None:
-        processed_query = query
-        query_embedding = product_manager.get_embeddings([query])[0]
         top_k_recommendations = product_manager.rerank_recommendations(
             query_embedding,
             st.session_state.current_recommendations
         )
     else:
-        processed_query = process_user_intent(query, user_intent_prompt)
-        print(processed_query)
-        query_embedding = product_manager.get_embeddings([processed_query['search_query']])[0]
         top_k_recommendations = product_manager.get_recommendations(query_embedding)
         st.session_state.current_recommendations = top_k_recommendations
 
-    return processed_query, top_k_recommendations
+    return top_k_recommendations
 
 
 def get_product_recos(top_k_recommendations: List[Tuple]) -> List[Dict[str, Any]]:
@@ -120,7 +119,17 @@ def render_chat_interface():
             if query:
                 add_message('user', query)
                 is_followup = len(st.session_state.chat_history) > 1
-                processed_query, top_k_recommendations = process_query(query, is_followup)
+
+                if is_followup:
+                    processed_query = st.session_state.processed_query + "\n" + query
+                    print("Followup query: ", processed_query)
+                    
+                else:
+                    processed_query = process_user_intent(query)
+                    st.session_state.processed_query = processed_query
+                    print("Processed query: ", processed_query)
+
+                top_k_recommendations = process_query(processed_query, is_followup)
                 st.session_state.products = get_product_recos(top_k_recommendations)
                 followup_questions = get_followup_questions(processed_query, top_k_recommendations)
                 

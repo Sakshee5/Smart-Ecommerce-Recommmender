@@ -2,6 +2,7 @@
 import json
 from typing import Dict, List, Any
 import ollama
+from prompts import user_intent_prompt
 
 def get_ollama_response(query: str, system_prompt: str = "Respond only in valid JSON format.") -> str:
     """Get response from Ollama LLM."""
@@ -17,12 +18,12 @@ def get_ollama_response(query: str, system_prompt: str = "Respond only in valid 
     except Exception as e:
         return f"Error: {e}"
 
-def process_user_intent(query: str, intent_prompt: str) -> Dict[str, str]:
+def process_user_intent(query: str) -> Dict[str, str]:
     """Process user query to understand intent and generate search query."""
-    
-    response = get_ollama_response(intent_prompt.format(user_query=query))
+
+    response = get_ollama_response(user_intent_prompt.format(user_query=query))
     response = response.strip()
-    return json.loads(response)
+    return json.loads(response)['search_query']
 
 def generate_followup_questions(
     user_query: str,
