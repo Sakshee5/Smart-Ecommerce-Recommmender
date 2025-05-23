@@ -66,7 +66,7 @@ User selects → Results refined dynamically
 
 ---
 
-## 🔍 Why This Matters
+## Why This Matters
 
 - Shoppers often **don't know the exact words** to use
 - Fashion is **subjective** and **contextual** (color theory, body shape, trends)
