@@ -9,10 +9,11 @@ st.set_page_config(
 
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
-from data_handler import product_manager
-from llm_handler import process_user_intent, generate_followup_questions
-from prompts import user_intent_prompt, generate_followup_questions_prompt
+from data_handler import ProductDataManager
+from llm_handler import process_user_intent, generate_followup_questions, get_openai_embedding
+from prompts import generate_followup_questions_prompt
 
+product_manager = ProductDataManager()
 
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
@@ -36,7 +37,7 @@ def add_message(role: str, content: str):
 def process_query(query: str, is_followup: bool = False) -> Tuple[Dict[str, str], List[Tuple]]:
     """Process the user query and return products."""
 
-    query_embedding = product_manager.get_embeddings([query])[0]
+    query_embedding = get_openai_embedding(query)
     
     if is_followup and st.session_state.current_recommendations is not None:
         top_k_recommendations = product_manager.rerank_recommendations(

@@ -2,3 +2,7 @@
 *.env
 *.csv
 __pycache__
+*.faiss
+*.npy
+*.pkl
+/faiss
