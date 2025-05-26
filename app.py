@@ -10,8 +10,7 @@ st.set_page_config(
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
 from data_handler import ProductDataManager
-from llm_handler import process_user_intent, generate_followup_questions, get_openai_embedding
-from prompts import generate_followup_questions_prompt
+from llm_handler import process_user_intent, generate_followup_questions, get_openai_embedding, generate_review_summary
 
 product_manager = ProductDataManager()
 
@@ -25,6 +24,10 @@ if 'current_recommendations' not in st.session_state:
     st.session_state.current_recommendations = None
 if 'processed_query' not in st.session_state:
     st.session_state.processed_query = None
+if 'product_summaries' not in st.session_state:
+    st.session_state.product_summaries = {}
+if 'current_product_summaries' not in st.session_state:
+    st.session_state.current_product_summaries = {}
 
 def add_message(role: str, content: str):
     """Add a message to the chat history."""
@@ -77,14 +80,34 @@ def get_followup_questions(
         return generate_followup_questions(
             st.session_state.chat_history,
             reviews,
-            generate_followup_questions_prompt
         )
     else:
         return generate_followup_questions(
             processed_query,
             reviews,
-            generate_followup_questions_prompt
-        )   
+        ) 
+
+def generate_product_summaries(
+    top_k_recommendations: List[Tuple],
+) -> List[str]:
+    """Generate follow-up questions based on recommendations."""
+
+    st.session_state.current_product_summaries = {}
+
+    reviews = [{
+        'product_name': rec[0],
+        'review_titles': rec[2],
+        'review_contents': rec[3]
+    } for rec in top_k_recommendations]
+
+    for i, prod_details in enumerate(reviews):
+        print(i)
+        if prod_details['product_name'] not in st.session_state.product_summaries.keys():
+            prod_summary = generate_review_summary(prod_details)
+            st.session_state.product_summaries[prod_details['product_name']] = prod_summary
+            st.session_state.current_product_summaries[prod_details['product_name']] = prod_summary
+        else:
+            st.session_state.current_product_summaries[prod_details['product_name']] = st.session_state.product_summaries[prod_details['product_name']]
 
 def render_chat_interface():
     """Render the chat interface."""
@@ -126,18 +149,22 @@ def render_chat_interface():
                     print("Followup query: ", processed_query)
                     
                 else:
-                    processed_query = process_user_intent(query)
+                    with st.spinner("Processing User Intent..."):
+                        processed_query = process_user_intent(query)
                     st.session_state.processed_query = processed_query
                     print("Processed query: ", processed_query)
 
-                top_k_recommendations = process_query(processed_query, is_followup)
+                with st.spinner("Generating Recommendations..."):
+                    top_k_recommendations = process_query(processed_query, is_followup)
                 st.session_state.products = get_product_recos(top_k_recommendations)
-                followup_questions = get_followup_questions(processed_query, top_k_recommendations)
-                
-                formatted_questions = "\n".join(followup_questions)
-                add_message('assistant', f"""I've found some items that match your style. To further refine your search:
 
-{formatted_questions}""")
+                with st.spinner("Generating Follow-up Questions..."):
+                    followup_questions = get_followup_questions(processed_query, top_k_recommendations)
+
+                with st.spinner("Generating Product Review Summaries..."):
+                    generate_product_summaries(top_k_recommendations)
+                
+                add_message('assistant', followup_questions)
                 
                 st.session_state.input_key += 1
                 st.rerun()
@@ -152,12 +179,14 @@ def render_chat_interface():
 def render_product_recommendations():
     """Render the product recommendations section."""
     st.subheader("Recommended Items")
+    print(st.session_state.current_product_summaries)
     
     for i in range(0, len(st.session_state.products), 3):
         row_products = st.session_state.products[i:i+3]
+        summaries = list(st.session_state.current_product_summaries.values())[i:i+3]
         cols = st.columns(len(row_products))
         
-        for idx, product in enumerate(row_products):
+        for idx, (product, summary) in enumerate(zip(row_products, summaries)):
             with cols[idx]:
                 with st.container():
                     st.image(product['product_image'], width=100)
@@ -167,6 +196,8 @@ def render_product_recommendations():
                         rating = float(product['rating'])
                         stars = '⭐' * int(rating) + '☆' * (5 - int(rating))
                         st.markdown(f"**Rating:** {stars} ({rating})")
+
+                    st.write(summary)
 
 def main():
     """Main application entry point."""
